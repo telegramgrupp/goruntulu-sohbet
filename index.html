@@ -3,42 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Basit Görüntülü Sohbet</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Monkey - Rastgele Görüntülü Sohbet</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Basit Görüntülü Sohbet</h1>
+    <header class="navbar">
+        <div class="logo">
+            <h1>Monkey</h1>
         </div>
-        
-        <div class="video-container">
-            <div class="video-box">
-                <h3>Sen</h3>
-                <video id="localVideo" autoplay muted playsinline></video>
+        <nav>
+            <ul>
+                <li><a href="#" class="active">Ana Sayfa</a></li>
+                <li><a href="#features">Özellikler</a></li>
+                <li><a href="#about">Hakkımızda</a></li>
+                <li><a href="#contact">İletişim</a></li>
+            </ul>
+        </nav>
+        <div class="auth-buttons">
+            <a href="/login.html" class="btn btn-login">Giriş Yap</a>
+            <a href="/register.html" class="btn btn-register">Kayıt Ol</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Yeni İnsanlarla Tanışmanın En Kolay Yolu</h1>
+                <p>Dünya çapında milyonlarca kullanıcıyla anında görüntülü sohbete başlayın.</p>
+                <button id="startChatBtn" class="btn btn-primary">Sohbete Başla</button>
             </div>
-            <div class="video-box">
-                <h3>Karşı Taraf</h3>
-                <video id="remoteVideo" autoplay playsinline></video>
+            <div class="hero-image">
+                <img src="img/chat-illustration.svg" alt="Görüntülü sohbet">
             </div>
-        </div>
-        
-        <div class="controls">
-            <button id="startButton">Başlat</button>
-            <button id="callButton" disabled>Ara</button>
-            <button id="hangupButton" disabled>Kapat</button>
-        </div>
-        
-        <div class="chat-box">
-            <div id="messages" class="messages"></div>
-            <div class="message-input">
-                <input type="text" id="messageInput" placeholder="Mesaj yazın...">
-                <button id="sendButton">Gönder</button>
+        </section>
+
+        <section id="features" class="features">
+            <h2>Neden Monkey?</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <i class="fas fa-video"></i>
+                    <h3>HD Görüntülü Sohbet</h3>
+                    <p>Yüksek kaliteli görüntü ve ses ile kesintisiz sohbet deneyimi.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-globe"></i>
+                    <h3>Dünya Çapında Bağlantı</h3>
+                    <p>Farklı kültürlerden insanlarla tanışın ve yeni arkadaşlıklar kurun.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-lock"></i>
+                    <h3>Güvenli ve Özel</h3>
+                    <p>End-to-end şifreleme ile görüşmeleriniz daima güvende.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-smile"></i>
+                    <h3>Eğlenceli Filtreler</h3>
+                    <p>Görüşmelerinizi eğlenceli filtreler ve efektlerle renklendirin.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="premium-section">
+            <div class="premium-content">
+                <h2>Monkey Premium</h2>
+                <p>Daha fazla özellik ve sınırsız görüşme için premium üyeliğe geçin.</p>
+                <ul class="premium-features">
+                    <li><i class="fas fa-check"></i> Sınırsız görüntülü sohbet</li>
+                    <li><i class="fas fa-check"></i> Reklamsız deneyim</li>
+                    <li><i class="fas fa-check"></i> HD görüntü kalitesi</li>
+                    <li><i class="fas fa-check"></i> Özel profil rozetleri</li>
+                </ul>
+                <a href="/premium.html" class="btn btn-premium">Premium'a Yükselt</a>
+            </div>
+            <div class="premium-image">
+                <img src="img/premium-illustration.svg" alt="Premium özellikleri">
+            </div>
+        </section>
+    </main>
+
+    <div id="chat-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="video-container">
+                <div class="video-box">
+                    <h3>Sen</h3>
+                    <video id="localVideo" autoplay muted playsinline></video>
+                </div>
+                <div class="video-box">
+                    <h3>Karşı Taraf</h3>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="startButton" class="btn btn-control"><i class="fas fa-play"></i> Başlat</button>
+                <button id="callButton" class="btn btn-control" disabled><i class="fas fa-phone"></i> Ara</button>
+                <button id="hangupButton" class="btn btn-control" disabled><i class="fas fa-phone-slash"></i> Kapat</button>
+                <button id="nextButton" class="btn btn-control"><i class="fas fa-forward"></i> Sonraki</button>
+            </div>
+            
+            <div class="chat-box">
+                <div id="messages" class="messages"></div>
+                <div class="message-input">
+                    <input type="text" id="messageInput" placeholder="Mesaj yazın...">
+                    <button id="sendButton"><i class="fas fa-paper-plane"></i></button>
+                </div>
             </div>
         </div>
     </div>
-    
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <h3>Monkey</h3>
+                <p>© 2025 Tüm hakları saklıdır.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Bağlantılar</h4>
+                <ul>
+                    <li><a href="#">Ana Sayfa</a></li>
+                    <li><a href="#features">Özellikler</a></li>
+                    <li><a href="#about">Hakkımızda</a></li>
+                    <li><a href="#contact">İletişim</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Yasal</h4>
+                <ul>
+                    <li><a href="/terms.html">Kullanım Şartları</a></li>
+                    <li><a href="/privacy.html">Gizlilik Politikası</a></li>
+                    <li><a href="/cookies.html">Çerez Politikası</a></li>
+                </ul>
+            </div>
+            <div class="footer-social">
+                <h4>Bizi Takip Edin</h4>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
-    <script src="client.js"></script>
+    <script src="js/chat.js"></script>
+    <script>
+        // Modal işlemleri
+        const modal = document.getElementById("chat-modal");
+        const startChatBtn = document.getElementById("startChatBtn");
+        const closeBtn = document.querySelector(".close");
+
+        startChatBtn.onclick = function() {
+            modal.style.display = "block";
+        }
+
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
 </body>
 </html>

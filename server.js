@@ -5,6 +5,9 @@ const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const Recording = require('./models/recordingModel');
 const User = require('./models/userModel');
 
@@ -17,6 +20,17 @@ const io = socketIo(server, {
         methods: ['GET', 'POST']
     }
 });
+
+// JWT ayarları
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+const JWT_EXPIRE = process.env.JWT_EXPIRE || '30d';
+
+// JWT token oluşturma fonksiyonu
+const generateToken = (id) => {
+  return jwt.sign({ id }, JWT_SECRET, {
+    expiresIn: JWT_EXPIRE
+  });
+};
 
 // MongoDB bağlantısı
 mongoose.connect('mongodb+srv://kaiii:125899852105Ma@cluster0.tlz0pfx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
@@ -42,20 +56,115 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Express JSON ve URL-encoded middleware'leri
+// Express JSON, cookie parser ve URL-encoded middleware'leri
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Statik dosyaları sunma
 app.use(express.static(path.join(__dirname, './')));
+
+// CSS, JS ve İmaj dosyaları için rotalar
+app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/img', express.static(path.join(__dirname, 'img')));
 
 // Admin panel statik dosyalar için rotalar
 app.use('/admin/css', express.static(path.join(__dirname, 'public/admin/css')));
 app.use('/admin/js', express.static(path.join(__dirname, 'public/admin/js')));
 
+// Kimlik doğrulama middleware'i
+const protect = async (req, res, next) => {
+  try {
+    let token;
+    
+    // Token'ı header'dan al
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    } 
+    // Token'ı cookie'den al
+    else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+    
+    // Token yoksa
+    if (!token) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Bu işlemi yapmak için lütfen giriş yapın' 
+      });
+    }
+    
+    // Token'ı doğrula
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Kullanıcıyı bul
+    const user = await User.findById(decoded.id);
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Bu token ile ilişkilendirilmiş kullanıcı bulunamadı' 
+      });
+    }
+    
+    // Kullanıcı askıya alınmış veya yasaklanmışsa
+    if (user.accountStatus !== 'active') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Hesabınız şu anda aktif değil' 
+      });
+    }
+    
+    // Req objesine kullanıcıyı ekle
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Geçersiz token' 
+    });
+  }
+};
+
+// Admin kontrolü middleware'i
+const adminCheck = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    return res.status(403).json({ 
+      success: false, 
+      message: 'Bu işlemi yapmak için admin yetkisine sahip olmalısınız' 
+    });
+  }
+};
+
+// Premium kontrolü middleware'i
+const premiumCheck = (req, res, next) => {
+  if (req.user && (req.user.role === 'premium' || req.user.role === 'admin' || 
+      (req.user.premiumUntil && new Date(req.user.premiumUntil) > new Date()))) {
+    next();
+  } else {
+    return res.status(403).json({ 
+      success: false, 
+      message: 'Bu özellik sadece premium üyelere açıktır' 
+    });
+  }
+};
+
 // Ana rotayı tanımlama
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Giriş sayfası
+app.get('/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+// Kayıt sayfası
+app.get('/register.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'register.html'));
 });
 
 // Admin giriş sayfası
@@ -68,50 +177,420 @@ app.get('/admin/dashboard.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'views/admin/dashboard.html'));
 });
 
-// Admin kullanıcı yönetim sayfası (ileride eklenecek)
+// Admin kullanıcı yönetim sayfası
 app.get('/admin/users.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'views/admin/users.html'));
 });
 
-// Admin görüşme kayıtları sayfası (ileride eklenecek)
+// Admin görüşme kayıtları sayfası
 app.get('/admin/recordings.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'views/admin/recordings.html'));
 });
 
-// Geçici admin login API (ileride veritabanı ile değiştirilecek)
-app.post('/api/admin/login', (req, res) => {
-    const { username, password } = req.body;
+// Kullanıcı Kayıt API'sı
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
     
-    // Geçici basit kontrol (Gerçek projede veritabanından kontrol edilmeli)
-    if (username === 'admin' && password === 'password123') {
-        res.json({ success: true, message: 'Giriş başarılı' });
-    } else {
-        res.status(401).json({ success: false, message: 'Kullanıcı adı veya şifre hatalı' });
+    // Kullanıcı adı ve e-posta kontrolü
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { username }] 
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Bu kullanıcı adı veya e-posta zaten kullanılıyor' 
+      });
     }
+    
+    // Yeni kullanıcı oluştur
+    const user = new User({
+      username,
+      email,
+      password
+    });
+    
+    await user.save();
+    
+    // Token oluştur
+    const token = generateToken(user._id);
+    
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage
+      }
+    });
+  } catch (error) {
+    console.error('Kayıt hatası:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Sunucu hatası' 
+    });
+  }
 });
 
-// Admin istatistik bilgilerini döndüren API (ileride veritabanından alınacak)
+// Kullanıcı Giriş API'sı
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // E-posta ile kullanıcıyı bul
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Geçersiz e-posta veya şifre' 
+      });
+    }
+    
+    // Şifre kontrolü
+    const isMatch = await bcrypt.compare(password, user.password);
+    
+    if (!isMatch) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Geçersiz e-posta veya şifre' 
+      });
+    }
+    
+    // Hesap durumu kontrolü
+    if (user.accountStatus !== 'active') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Hesabınız şu anda aktif değil' 
+      });
+    }
+    
+    // Son giriş zamanını güncelle
+    user.lastLogin = Date.now();
+    await user.save();
+    
+    // Token oluştur
+    const token = generateToken(user._id);
+    
+    // Premium durumunu kontrol et
+    const isPremium = user.role === 'premium' || user.role === 'admin' || 
+                     (user.premiumUntil && new Date(user.premiumUntil) > new Date());
+    
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+        isPremium
+      }
+    });
+  } catch (error) {
+    console.error('Giriş hatası:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Sunucu hatası' 
+    });
+  }
+});
+
+// Mevcut Kullanıcı Bilgisi API'sı
+app.get('/api/me', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    // Premium durumunu kontrol et
+    const isPremium = user.role === 'premium' || user.role === 'admin' || 
+                     (user.premiumUntil && new Date(user.premiumUntil) > new Date());
+    
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+        bio: user.bio,
+        location: user.location,
+        interests: user.interests,
+        coins: user.coins,
+        isPremium,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Kullanıcı bilgisi hatası:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Sunucu hatası' 
+    });
+  }
+});
+
+// Şifre Sıfırlama E-postası API'sı
+app.post('/api/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Bu e-posta ile kayıtlı kullanıcı bulunamadı' 
+      });
+    }
+    
+    // Gerçek uygulamada şifre sıfırlama e-postası gönderme işlemi
+    // Şimdilik simüle ediyoruz
+    
+    res.json({
+      success: true,
+      message: 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi'
+    });
+  } catch (error) {
+    console.error('Şifre sıfırlama hatası:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Sunucu hatası' 
+    });
+  }
+});
+
+// Profil Güncelleme API'sı
+app.put('/api/profile', protect, async (req, res) => {
+  try {
+    const updates = req.body;
+    const allowedUpdates = ['username', 'bio', 'location', 'interests'];
+    
+    // İzin verilmeyen güncelleme alanlarını filtrele
+    const filteredUpdates = {};
+    Object.keys(updates).forEach(key => {
+      if (allowedUpdates.includes(key)) {
+        filteredUpdates[key] = updates[key];
+      }
+    });
+    
+    // Kullanıcıyı güncelle
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: filteredUpdates },
+      { new: true, runValidators: true }
+    );
+    
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+        bio: user.bio,
+        location: user.location,
+        interests: user.interests,
+        isPremium: user.role === 'premium' || user.role === 'admin' || 
+                 (user.premiumUntil && new Date(user.premiumUntil) > new Date())
+      }
+    });
+  } catch (error) {
+    console.error('Profil güncelleme hatası:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Sunucu hatası' 
+    });
+  }
+});
+
+// Admin istatistik bilgilerini döndüren API
 app.get('/api/admin/stats', async (req, res) => {
     try {
         const totalCalls = await Recording.countDocuments();
+        const totalUsers = await User.countDocuments();
+        const premiumUsers = await User.countDocuments({
+            $or: [
+                { role: 'premium' },
+                { premiumUntil: { $gt: new Date() } }
+            ]
+        });
         
         res.json({
             activeUsers: connectedUsers.length,
             totalCalls: totalCalls,
-            recordedCalls: totalCalls
+            recordedCalls: totalCalls,
+            totalUsers: totalUsers,
+            premiumUsers: premiumUsers
         });
     } catch (err) {
         console.error('İstatistik alınırken hata oluştu:', err);
         res.json({
             activeUsers: connectedUsers.length,
             totalCalls: 0,
-            recordedCalls: 0
+            recordedCalls: 0,
+            totalUsers: 0,
+            premiumUsers: 0
         });
     }
 });
 
+// Admin login API'sı
+app.post('/api/admin/login', async (req, res) => {
+    const { username, password } = req.body;
+    
+    try {
+        // Kullanıcıyı bul
+        const user = await User.findOne({ username });
+        
+        if (!user || user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: 'Yetkisiz erişim' });
+        }
+        
+        // Şifre kontrolü
+        const isMatch = await bcrypt.compare(password, user.password);
+        
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Geçersiz kullanıcı adı veya şifre' });
+        }
+        
+        // Token oluştur
+        const token = generateToken(user._id);
+        
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user._id,
+                username: user.username,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Admin giriş hatası:', error);
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// Admin kullanıcı listesi API'sı
+app.get('/api/admin/users', protect, adminCheck, async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        
+        res.json({
+            success: true,
+            count: users.length,
+            users
+        });
+    } catch (error) {
+        console.error('Kullanıcı listesi hatası:', error);
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// Coin satın alma API'sı
+app.post('/api/purchase/coins', protect, async (req, res) => {
+    try {
+        const { packageId } = req.body;
+        const user = req.user;
+        
+        // Coin paketleri (gerçek uygulamada veritabanından alınabilir)
+        const coinPackages = {
+            'small': { coins: 100, price: 5 },
+            'medium': { coins: 250, price: 10 },
+            'large': { coins: 600, price: 20 }
+        };
+        
+        // Geçerli paket kontrolü
+        if (!coinPackages[packageId]) {
+            return res.status(400).json({
+                success: false,
+                message: 'Geçersiz paket'
+            });
+        }
+        
+        const package = coinPackages[packageId];
+        
+        // Gerçek uygulamada ödeme işlemi burada yapılır
+        // Şimdilik simüle ediyoruz
+        
+        // Kullanıcıya coin ekle
+        user.coins += package.coins;
+        await user.save();
+        
+        res.json({
+            success: true,
+            message: `${package.coins} coin başarıyla hesabınıza eklendi`,
+            newBalance: user.coins
+        });
+    } catch (error) {
+        console.error('Coin satın alma hatası:', error);
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
+// Premium abonelik satın alma API'sı
+app.post('/api/purchase/premium', protect, async (req, res) => {
+    try {
+        const { plan } = req.body;
+        const user = req.user;
+        
+        // Premium planlar (gerçek uygulamada veritabanından alınabilir)
+        const premiumPlans = {
+            'monthly': { duration: 30, price: 9.99 },
+            'yearly': { duration: 365, price: 99.99 }
+        };
+        
+        // Geçerli plan kontrolü
+        if (!premiumPlans[plan]) {
+            return res.status(400).json({
+                success: false,
+                message: 'Geçersiz plan'
+            });
+        }
+        
+        const selectedPlan = premiumPlans[plan];
+        
+        // Gerçek uygulamada ödeme işlemi burada yapılır
+        // Şimdilik simüle ediyoruz
+        
+        // Premium bitiş tarihini ayarla
+        const currentDate = new Date();
+        let newExpiryDate;
+        
+        // Mevcut premium üyelik varsa üzerine ekle
+        if (user.premiumUntil && new Date(user.premiumUntil) > currentDate) {
+            newExpiryDate = new Date(user.premiumUntil);
+        } else {
+            newExpiryDate = new Date();
+        }
+        
+        // Gün ekle
+        newExpiryDate.setDate(newExpiryDate.getDate() + selectedPlan.duration);
+        
+        // Kullanıcıyı güncelle
+        user.premiumUntil = newExpiryDate;
+        await user.save();
+        
+        res.json({
+            success: true,
+            message: `Premium üyeliğiniz ${new Date(newExpiryDate).toLocaleDateString()} tarihine kadar aktif`,
+            premiumUntil: newExpiryDate
+        });
+    } catch (error) {
+        console.error('Premium satın alma hatası:', error);
+        res.status(500).json({ success: false, message: 'Sunucu hatası' });
+    }
+});
+
 // Kayıt yükleme API'si
-app.post('/api/recordings/upload', upload.single('recording'), async (req, res) => {
+app.post('/api/recordings/upload', protect, upload.single('recording'), async (req, res) => {
   try {
     const { duration, startTime, endTime } = req.body;
     
@@ -123,7 +602,7 @@ app.post('/api/recordings/upload', upload.single('recording'), async (req, res) 
       startTime: new Date(startTime),
       endTime: new Date(endTime),
       duration: parseInt(duration, 10),
-      participants: [],
+      participants: [req.user._id],
       recordingUrl: filePath,
       messages: []
     });
@@ -138,9 +617,19 @@ app.post('/api/recordings/upload', upload.single('recording'), async (req, res) 
 });
 
 // Kayıtları listeleme API'si
-app.get('/api/recordings', async (req, res) => {
+app.get('/api/recordings', protect, async (req, res) => {
   try {
-    const recordings = await Recording.find().sort({ startTime: -1 });
+    // Admin tüm kayıtları görebilir, normal kullanıcı sadece kendine ait kayıtları
+    let recordings;
+    
+    if (req.user.role === 'admin') {
+      recordings = await Recording.find().sort({ startTime: -1 });
+    } else {
+      recordings = await Recording.find({ 
+        participants: req.user._id 
+      }).sort({ startTime: -1 });
+    }
+    
     res.json({ success: true, recordings });
   } catch (err) {
     console.error('Kayıt listeleme hatası:', err);
@@ -149,12 +638,20 @@ app.get('/api/recordings', async (req, res) => {
 });
 
 // Kayıt silme API'si
-app.delete('/api/recordings/:id', async (req, res) => {
+app.delete('/api/recordings/:id', protect, async (req, res) => {
   try {
     const recording = await Recording.findById(req.params.id);
     
     if (!recording) {
       return res.status(404).json({ success: false, error: 'Kayıt bulunamadı' });
+    }
+    
+    // İzin kontrolü - sadece admin veya kaydın sahibi silebilir
+    if (req.user.role !== 'admin' && !recording.participants.includes(req.user._id)) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Bu kaydı silme yetkiniz yok' 
+      });
     }
     
     // Dosyayı sil
@@ -174,8 +671,30 @@ app.delete('/api/recordings/:id', async (req, res) => {
   }
 });
 
+// Eşleşme isteme API'sı
+app.post('/api/match', protect, async (req, res) => {
+  try {
+    // Eşleşme kriterleri (opsiyonel)
+    const { gender, minAge, maxAge, interests } = req.body;
+    
+    // Premium kullanıcılar filtreleme yapabilir
+    const isPremium = req.user.role === 'premium' || req.user.role === 'admin' || 
+                    (req.user.premiumUntil && new Date(req.user.premiumUntil) > new Date());
+    
+    // Eşleşme sağlanacak
+    res.json({
+      success: true,
+      message: 'Eşleşme bekleniyor...',
+      canFilter: isPremium
+    });
+  } catch (error) {
+    console.error('Eşleşme hatası:', error);
+    res.status(500).json({ success: false, message: 'Sunucu hatası' });
+  }
+});
+
 // Kayıt dosyalarını sunma
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', protect, express.static(path.join(__dirname, 'uploads')));
 
 // Bağlı istemcileri tutacak dizi
 const connectedUsers = [];
@@ -185,33 +704,89 @@ io.on('connection', (socket) => {
     console.log('Yeni kullanıcı bağlandı:', socket.id);
     connectedUsers.push(socket.id);
     
-    // Arama teklifi alma olayı
-    socket.on('offer', (offer) => {
-        console.log('Teklif alındı:', socket.id);
-        socket.broadcast.emit('offer', offer);
+    // Kullanıcı kimliği ve oda ataması
+    let userId = null;
+    let room = null;
+    
+    // Kullanıcı kimlik doğrulama
+    socket.on('authenticate', (token) => {
+        try {
+            // Token'ı doğrula
+            const decoded = jwt.verify(token, JWT_SECRET);
+            userId = decoded.id;
+            socket.join(`user:${userId}`); // Kullanıcıya özel oda oluştur
+            
+            console.log(`Kullanıcı doğrulandı: ${userId}`);
+        } catch (error) {
+            console.error('Socket kimlik doğrulama hatası:', error);
+        }
     });
     
-    // Arama cevabı alma olayı
-    socket.on('answer', (answer) => {
-        console.log('Cevap alındı:', socket.id);
-        socket.broadcast.emit('answer', answer);
+    // Eşleşme istemi
+    socket.on('request_match', async (criteria = {}) => {
+        try {
+            // Aktif kullanıcılardan rastgele birini seç
+            // Gerçek uygulamada burada eşleşme algoritması olacak
+            const otherSockets = connectedUsers.filter(id => id !== socket.id);
+            
+            if (otherSockets.length > 0) {
+                // Rastgele bir bağlantı seç
+                const randomIndex = Math.floor(Math.random() * otherSockets.length);
+                const matchedSocketId = otherSockets[randomIndex];
+                
+                // Benzersiz oda ID'si oluştur
+                room = `chat:${Date.now()}`;
+                
+                // Her iki kullanıcıyı da odaya ekle
+                socket.join(room);
+                io.sockets.sockets.get(matchedSocketId)?.join(room);
+                
+                // Eşleşmeyi her iki kullanıcıya da bildir
+                io.to(room).emit('match_found', { room });
+                
+                console.log(`Eşleşme oluşturuldu: ${room}`);
+            } else {
+                // Eşleşme bulunamadı
+                socket.emit('no_match_found');
+            }
+        } catch (error) {
+            console.error('Eşleşme hatası:', error);
+            socket.emit('match_error', 'Eşleşme sırasında bir hata oluştu');
+        }
     });
     
-    // ICE aday alma olayı
-    socket.on('ice-candidate', (candidate) => {
-        socket.broadcast.emit('ice-candidate', candidate);
+    // Arama teklifi alma olayı - odaya özel
+    socket.on('offer', (offer, roomId) => {
+        console.log('Teklif alındı:', socket.id, 'Oda:', roomId);
+        socket.to(roomId || room).emit('offer', offer);
     });
     
-    // Mesaj alma olayı
-    socket.on('message', (message) => {
-        console.log('Mesaj alındı:', socket.id, message);
-        socket.broadcast.emit('message', message);
+    // Arama cevabı alma olayı - odaya özel
+    socket.on('answer', (answer, roomId) => {
+        console.log('Cevap alındı:', socket.id, 'Oda:', roomId);
+        socket.to(roomId || room).emit('answer', answer);
     });
     
-    // Arama sonlandırma olayı
-    socket.on('hang-up', () => {
-        console.log('Arama sonlandırıldı:', socket.id);
-        socket.broadcast.emit('hang-up');
+    // ICE aday alma olayı - odaya özel
+    socket.on('ice-candidate', (candidate, roomId) => {
+        socket.to(roomId || room).emit('ice-candidate', candidate);
+    });
+    
+    // Mesaj alma olayı - odaya özel
+    socket.on('message', (message, roomId) => {
+        console.log('Mesaj alındı:', socket.id, message, 'Oda:', roomId);
+        socket.to(roomId || room).emit('message', message);
+    });
+    
+    // Arama sonlandırma olayı - odaya özel
+    socket.on('hang-up', (roomId) => {
+        console.log('Arama sonlandırıldı:', socket.id, 'Oda:', roomId);
+        socket.to(roomId || room).emit('hang-up');
+        
+        // Odadan çık
+        if (roomId || room) {
+            socket.leave(roomId || room);
+        }
     });
     
     // Bağlantı kesilme olayı
@@ -221,7 +796,11 @@ io.on('connection', (socket) => {
         if (index !== -1) {
             connectedUsers.splice(index, 1);
         }
-        socket.broadcast.emit('hang-up');
+        
+        // Odadan çık
+        if (room) {
+            socket.to(room).emit('hang-up');
+        }
     });
 });
 

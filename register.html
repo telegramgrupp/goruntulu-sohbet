@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayıt Ol - Monkey</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .auth-container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        .auth-container h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--dark-color);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+        }
+        
+        .form-check {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .form-check input {
+            margin-right: 10px;
+        }
+        
+        .auth-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .auth-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+        
+        .btn-full {
+            width: 100%;
+        }
+        
+        .social-login {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .social-login p {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .social-login p::before, .social-login p::after {
+            content: "";
+            display: inline-block;
+            width: 40%;
+            height: 1px;
+            background-color: #ddd;
+            position: absolute;
+            top: 50%;
+        }
+        
+        .social-login p::before {
+            left: 0;
+        }
+        
+        .social-login p::after {
+            right: 0;
+        }
+        
+        .social-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .social-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            color: var(--dark-color);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .social-button:hover {
+            background-color: #eee;
+        }
+        
+        .social-button.facebook:hover {
+            background-color: #3b5998;
+            color: white;
+        }
+        
+        .social-button.google:hover {
+            background-color: #db4437;
+            color: white;
+        }
+        
+        .social-button.apple:hover {
+            background-color: #000;
+            color: white;
+        }
+        
+        .error-message, .success-message {
+            padding: 10px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .error-message {
+            background-color: #ffebee;
+            color: var(--danger-color);
+            border: 1px solid #ffcdd2;
+        }
+        
+        .success-message {
+            background-color: #e8f5e9;
+            color: var(--success-color);
+            border: 1px solid #c8e6c9;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">
+            <h1>Monkey</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/">Ana Sayfa</a></li>
+                <li><a href="/#features">Özellikler</a></li>
+                <li><a href="/#about">Hakkımızda</a></li>
+                <li><a href="/#contact">İletişim</a></li>
+            </ul>
+        </nav>
+        <div class="auth-buttons">
+            <a href="/login.html" class="btn btn-login">Giriş Yap</a>
+            <a href="/register.html" class="btn btn-register">Kayıt Ol</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="auth-container">
+            <h2>Yeni Hesap Oluştur</h2>
+            
+            <div id="error-message" class="error-message" style="display: none;"></div>
+            <div id="success-message" class="success-message" style="display: none;"></div>
+            
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="username">Kullanıcı Adı</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">E-posta</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Şifre</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm-password">Şifre Tekrarı</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required>
+                </div>
+                
+                <div class="form-check">
+                    <input type="checkbox" id="terms" name="terms" required>
+                    <label for="terms">Kullanım Şartları ve Gizlilik Politikasını kabul ediyorum</label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-full">Kayıt Ol</button>
+            </form>
+            
+            <div class="auth-links">
+                <p>Zaten hesabınız var mı? <a href="/login.html">Giriş Yap</a></p>
+            </div>
+            
+            <div class="social-login">
+                <p>veya</p>
+                <div class="social-buttons">
+                    <a href="#" class="social-button facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-button google"><i class="fab fa-google"></i></a>
+                    <a href="#" class="social-button apple"><i class="fab fa-apple"></i></a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <h3>Monkey</h3>
+                <p>© 2025 Tüm hakları saklıdır.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Bağlantılar</h4>
+                <ul>
+                    <li><a href="/">Ana Sayfa</a></li>
+                    <li><a href="/#features">Özellikler</a></li>
+                    <li><a href="/#about">Hakkımızda</a></li>
+                    <li><a href="/#contact">İletişim</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Yasal</h4>
+                <ul>
+                    <li><a href="/terms.html">Kullanım Şartları</a></li>
+                    <li><a href="/privacy.html">Gizlilik Politikası</a></li>
+                    <li><a href="/cookies.html">Çerez Politikası</a></li>
+                </ul>
+            </div>
+            <div class="footer-social">
+                <h4>Bizi Takip Edin</h4>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const terms = document.getElementById('terms').checked;
+            
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            // Basit doğrulama
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Şifreler eşleşmiyor!';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorMessage.textContent = 'Şifre en az 6 karakter olmalıdır!';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            if (!terms) {
+                errorMessage.textContent = 'Kullanım şartlarını kabul etmelisiniz!';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // Kayıt API isteği burada olacak
+            // Şimdilik simüle ediyoruz
+            fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, email, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    successMessage.textContent = 'Kayıt başarılı! Yönlendiriliyorsunuz...';
+                    successMessage.style.display = 'block';
+                    
+                    // Simüle edilmiş yönlendirme
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 2000);
+                } else {
+                    errorMessage.textContent = data.message || 'Kayıt sırasında bir hata oluştu!';
+                    errorMessage.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Kayıt hatası:', error);
+                errorMessage.textContent = 'Bağlantı hatası, lütfen tekrar deneyin!';
+                errorMessage.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>
