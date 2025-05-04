@@ -2,25 +2,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     const messageDiv = document.getElementById('message');
 
-    loginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        
-        // Admin girişi için basit doğrulama (geçici)
-        // NOT: Gerçek projede bu bilgileri veritabanından almalısınız
-        if (username === 'admin' && password === 'password123') {
-            messageDiv.textContent = 'Giriş başarılı! Yönlendiriliyorsunuz...';
-            messageDiv.className = 'success';
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            // Burada normalde token oluşturma ve yönlendirme yapılır
-            setTimeout(() => {
-                window.location.href = '/admin/dashboard.html';
-            }, 1000);
-        } else {
-            messageDiv.textContent = 'Kullanıcı adı veya şifre hatalı!';
-            messageDiv.className = 'error';
-        }
-    });
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    messageDiv.textContent = 'Giriş başarılı! Yönlendiriliyorsunuz...';
+                    messageDiv.className = 'success';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/admin/dashboard.html';
+                    }, 1000);
+                } else {
+                    messageDiv.textContent = data.message || 'Kullanıcı adı veya şifre hatalı!';
+                    messageDiv.className = 'error';
+                }
+            } catch (error) {
+                messageDiv.textContent = 'Bir hata oluştu, lütfen tekrar deneyin.';
+                messageDiv.className = 'error';
+                console.error('Login hatası:', error);
+            }
+        });
+    }
 });
