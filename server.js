@@ -13,12 +13,61 @@ const io = socketIo(server, {
     }
 });
 
+// Express JSON ve URL-encoded middleware'leri
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Statik dosyaları sunma
 app.use(express.static(path.join(__dirname, './')));
+
+// Admin panel statik dosyalar için rotalar
+app.use('/admin/css', express.static(path.join(__dirname, 'public/admin/css')));
+app.use('/admin/js', express.static(path.join(__dirname, 'public/admin/js')));
 
 // Ana rotayı tanımlama
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Admin giriş sayfası
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views/admin/login.html'));
+});
+
+// Admin dashboard sayfası
+app.get('/admin/dashboard.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views/admin/dashboard.html'));
+});
+
+// Admin kullanıcı yönetim sayfası (ileride eklenecek)
+app.get('/admin/users.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views/admin/users.html'));
+});
+
+// Admin görüşme kayıtları sayfası (ileride eklenecek)
+app.get('/admin/recordings.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views/admin/recordings.html'));
+});
+
+// Geçici admin login API (ileride veritabanı ile değiştirilecek)
+app.post('/api/admin/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    // Geçici basit kontrol (Gerçek projede veritabanından kontrol edilmeli)
+    if (username === 'admin' && password === 'password123') {
+        res.json({ success: true, message: 'Giriş başarılı' });
+    } else {
+        res.status(401).json({ success: false, message: 'Kullanıcı adı veya şifre hatalı' });
+    }
+});
+
+// Admin istatistik bilgilerini döndüren API (ileride veritabanından alınacak)
+app.get('/api/admin/stats', (req, res) => {
+    res.json({
+        activeUsers: connectedUsers.length,
+        totalCalls: 0, // Veritabanından alınacak
+        recordedCalls: 0 // Veritabanından alınacak
+    });
 });
 
 // Bağlı istemcileri tutacak dizi
