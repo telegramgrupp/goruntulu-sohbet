@@ -14,6 +14,10 @@ let remoteStream;
 let peerConnection;
 let socketConnected = false;
 let socket;
+let mediaRecorder; // Kayıt için
+let recordedChunks = []; // Kayıt parçaları
+let isRecording = false; // Kayıt durumu
+let callStartTime; // Görüşme başlangıç zamanı
 
 // STUN sunucuları (NAT geçişi için)
 const iceServers = {
@@ -67,7 +71,7 @@ async function startVideo() {
 // Soket bağlantısını başlatma
 function initializeSocketConnection() {
     // Soket.io sunucusuna bağlanma
-    socket = io('http://localhost:3000');
+    socket = io();
     
     // Bağlantı olayı
     socket.on('connect', () => {
@@ -164,10 +168,19 @@ async function startCall() {
     // Buton durumlarını güncelleme
     callButton.disabled = true;
     hangupButton.disabled = false;
+    
+    // Görüşme başlatıldığında kaydı başlat
+    callStartTime = new Date();
+    startRecording();
 }
 
 // Aramayı sonlandırma
 function hangup() {
+    // Görüşme sonlandığında kaydı durdur
+    if (isRecording) {
+        stopRecording();
+    }
+    
     if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
@@ -213,4 +226,65 @@ function displayMessage(message, type) {
     
     messagesContainer.appendChild(messageElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Kayıt başlatma fonksiyonu
+function startRecording() {
+    if (!localStream) return;
+    
+    recordedChunks = [];
+    
+    try {
+        mediaRecorder = new MediaRecorder(localStream, { mimeType: 'video/webm' });
+        
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+                recordedChunks.push(e.data);
+            }
+        };
+        
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            uploadRecording(blob);
+        };
+        
+        mediaRecorder.start(1000); // Her saniye chunk oluştur
+        isRecording = true;
+        console.log('Kayıt başladı');
+    } catch (err) {
+        console.error('Kayıt başlatma hatası:', err);
+    }
+}
+
+// Kayıt durdurma fonksiyonu
+function stopRecording() {
+    if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        console.log('Kayıt durduruldu');
+    }
+}
+
+// Kaydı sunucuya yükleme fonksiyonu
+async function uploadRecording(blob) {
+    const endTime = new Date();
+    const duration = Math.round((endTime - callStartTime) / 1000); // Saniye cinsinden süre
+    
+    const formData = new FormData();
+    formData.append('recording', blob, 'recording.webm');
+    formData.append('duration', duration);
+    formData.append('startTime', callStartTime.toISOString());
+    formData.append('endTime', endTime.toISOString());
+    
+    try {
+        const response = await fetch('/api/recordings/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        console.log('Kayıt yüklendi:', result);
+    } catch (err) {
+        console.error('Kayıt yükleme hatası:', err);
+    }
 }

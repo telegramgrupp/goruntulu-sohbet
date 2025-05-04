@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görüşme Kayıtları - Admin Paneli</title>
+    <link rel="stylesheet" href="/admin/css/style.css">
+    <style>
+        .recordings-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .recording-list {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .recording-list th, .recording-list td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .recording-list th {
+            background-color: #f8f9fa;
+        }
+        
+        .recording-actions a {
+            display: inline-block;
+            margin-right: 10px;
+            padding: 5px 10px;
+            background-color: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        
+        .recording-actions a.delete {
+            background-color: #e74c3c;
+        }
+        
+        .no-recordings {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+        }
+        
+        .player-container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .player-container video {
+            width: 100%;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="recordings-container">
+        <div class="header">
+            <h1>Görüşme Kayıtları</h1>
+            <a href="/admin/dashboard.html">Gösterge Paneline Dön</a>
+        </div>
+        
+        <div id="recordingsTableContainer">
+            <table class="recording-list">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Süre</th>
+                        <th>Katılımcılar</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="recordingsTable">
+                    <!-- Kayıtlar JavaScript ile burada listelenecek -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="noRecordings" class="no-recordings" style="display: none;">
+            Henüz kaydedilmiş görüşme bulunmamaktadır.
+        </div>
+        
+        <div id="playerContainer" class="player-container">
+            <h2>Görüşme Kaydı</h2>
+            <video id="videoPlayer" controls></video>
+        </div>
+    </div>
+    
+    <script src="/admin/js/recordings.js"></script>
+</body>
+</html>

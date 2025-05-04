@@ -2,6 +2,11 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const socketIo = require('socket.io');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const fs = require('fs');
+const Recording = require('./models/recordingModel');
+const User = require('./models/userModel');
 
 // Express uygulaması oluşturma
 const app = express();
@@ -12,6 +17,30 @@ const io = socketIo(server, {
         methods: ['GET', 'POST']
     }
 });
+
+// MongoDB bağlantısı
+mongoose.connect('mongodb+srv://kaiii:125899852105Ma@cluster0.tlz0pfx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB bağlantısı başarılı'))
+.catch((err) => console.error('MongoDB bağlantı hatası:', err));
+
+// Dosya yükleme için multer yapılandırması
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `recording-${Date.now()}.webm`);
+  }
+});
+
+const upload = multer({ storage });
 
 // Express JSON ve URL-encoded middleware'leri
 app.use(express.json());
@@ -62,13 +91,91 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // Admin istatistik bilgilerini döndüren API (ileride veritabanından alınacak)
-app.get('/api/admin/stats', (req, res) => {
-    res.json({
-        activeUsers: connectedUsers.length,
-        totalCalls: 0, // Veritabanından alınacak
-        recordedCalls: 0 // Veritabanından alınacak
-    });
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const totalCalls = await Recording.countDocuments();
+        
+        res.json({
+            activeUsers: connectedUsers.length,
+            totalCalls: totalCalls,
+            recordedCalls: totalCalls
+        });
+    } catch (err) {
+        console.error('İstatistik alınırken hata oluştu:', err);
+        res.json({
+            activeUsers: connectedUsers.length,
+            totalCalls: 0,
+            recordedCalls: 0
+        });
+    }
 });
+
+// Kayıt yükleme API'si
+app.post('/api/recordings/upload', upload.single('recording'), async (req, res) => {
+  try {
+    const { duration, startTime, endTime } = req.body;
+    
+    // Sunucuda dosya yolu
+    const filePath = `/uploads/${req.file.filename}`;
+    
+    // Veritabanına kaydet
+    const recording = new Recording({
+      startTime: new Date(startTime),
+      endTime: new Date(endTime),
+      duration: parseInt(duration, 10),
+      participants: [],
+      recordingUrl: filePath,
+      messages: []
+    });
+    
+    await recording.save();
+    
+    res.json({ success: true, recordingId: recording._id, url: filePath });
+  } catch (err) {
+    console.error('Kayıt yükleme hatası:', err);
+    res.status(500).json({ success: false, error: 'Sunucu hatası' });
+  }
+});
+
+// Kayıtları listeleme API'si
+app.get('/api/recordings', async (req, res) => {
+  try {
+    const recordings = await Recording.find().sort({ startTime: -1 });
+    res.json({ success: true, recordings });
+  } catch (err) {
+    console.error('Kayıt listeleme hatası:', err);
+    res.status(500).json({ success: false, error: 'Sunucu hatası' });
+  }
+});
+
+// Kayıt silme API'si
+app.delete('/api/recordings/:id', async (req, res) => {
+  try {
+    const recording = await Recording.findById(req.params.id);
+    
+    if (!recording) {
+      return res.status(404).json({ success: false, error: 'Kayıt bulunamadı' });
+    }
+    
+    // Dosyayı sil
+    if (recording.recordingUrl) {
+      const filePath = path.join(__dirname, recording.recordingUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+    
+    await Recording.findByIdAndDelete(req.params.id);
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Kayıt silme hatası:', err);
+    res.status(500).json({ success: false, error: 'Sunucu hatası' });
+  }
+});
+
+// Kayıt dosyalarını sunma
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Bağlı istemcileri tutacak dizi
 const connectedUsers = [];
