@@ -51,11 +51,19 @@ document.addEventListener('DOMContentLoaded', function() {
 // Kamera ve mikrofonu başlatma
 async function startVideo() {
     try {
+        console.log('Kamera erişimi isteniyor...');
         // Kullanıcının kamera ve mikrofonuna erişim isteme
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         
+        console.log('Kamera erişimi sağlandı:', localStream);
+        
         // Yerel video elementine stream'i bağlama
-        if (localVideo) localVideo.srcObject = localStream;
+        if (localVideo) {
+            localVideo.srcObject = localStream;
+            console.log('Yerel video kaynağı ayarlandı');
+        } else {
+            console.error('localVideo elementi bulunamadı!');
+        }
         
         // Buton durumlarını güncelleme
         if (startButton) startButton.disabled = true;
@@ -339,10 +347,25 @@ async function uploadRecording(blob) {
     }
 }
 
-// Yardımcı fonksiyonlar
-
 // Sayfa yüklendiğinde otomatik olarak çalışacak kontroller
 document.addEventListener('DOMContentLoaded', function() {
     // Kullanıcı giriş durumunu kontrol et
     if (typeof authService !== 'undefined' && authService.isAuthenticated()) {
-        console.log('
+        console.log('Kullanıcı giriş yapmış');
+        // Giriş yapmış kullanıcı için ek işlemler yapılabilir
+    } else {
+        console.log('Kullanıcı giriş yapmamış');
+        // Giriş yapmamış kullanıcılar için ek işlemler yapılabilir
+    }
+    
+    // Chat modali içerisindeki butonların durum kontrolü
+    if (startButton) {
+        startButton.disabled = false;
+    }
+    if (callButton) {
+        callButton.disabled = true;
+    }
+    if (hangupButton) {
+        hangupButton.disabled = true;
+    }
+});
