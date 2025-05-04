@@ -1,0 +1,16 @@
+{
+  "name": "goruntulu-sohbet",
+  "version": "1.0.0",
+  "description": "Basit Görüntülü Sohbet Uygulaması",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^4.4.1"
+  },
+  "engines": {
+    "node": "14.x"
+  }
+}

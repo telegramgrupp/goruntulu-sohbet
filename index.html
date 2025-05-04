@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basit Görüntülü Sohbet</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Basit Görüntülü Sohbet</h1>
+        </div>
+        
+        <div class="video-container">
+            <div class="video-box">
+                <h3>Sen</h3>
+                <video id="localVideo" autoplay muted playsinline></video>
+            </div>
+            <div class="video-box">
+                <h3>Karşı Taraf</h3>
+                <video id="remoteVideo" autoplay playsinline></video>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="startButton">Başlat</button>
+            <button id="callButton" disabled>Ara</button>
+            <button id="hangupButton" disabled>Kapat</button>
+        </div>
+        
+        <div class="chat-box">
+            <div id="messages" class="messages"></div>
+            <div class="message-input">
+                <input type="text" id="messageInput" placeholder="Mesaj yazın...">
+                <button id="sendButton">Gönder</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
