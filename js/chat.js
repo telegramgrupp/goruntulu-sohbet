@@ -25,7 +25,10 @@ let callStartTime;
 const iceServers = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' }
     ]
 };
 
@@ -81,7 +84,12 @@ async function startVideo() {
 // Soket bağlantısını başlatma
 function initializeSocketConnection() {
     // Soket.io sunucusuna bağlanma
-    socket = io();
+    socket = io({
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 20000
+    });
     
     // Kullanıcı doğrulaması
     const token = localStorage.getItem('auth_token');
@@ -115,26 +123,44 @@ function initializeSocketConnection() {
     
     // Arama teklifi alma olayı
     socket.on('offer', async (offer) => {
+        console.log('Teklif alındı:', offer);
         if (!peerConnection) {
             createPeerConnection();
         }
         
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        
-        socket.emit('answer', answer, currentRoom);
+        try {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            
+            console.log('Cevap gönderiliyor:', answer);
+            socket.emit('answer', answer, currentRoom);
+        } catch (error) {
+            console.error('Teklif işleme hatası:', error);
+        }
     });
     
     // Arama cevabı alma olayı
     socket.on('answer', async (answer) => {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log('Cevap alındı:', answer);
+        try {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            console.log('Uzak açıklama ayarlandı');
+        } catch (error) {
+            console.error('Cevap işleme hatası:', error);
+        }
     });
     
     // ICE aday alma olayı
     socket.on('ice-candidate', async (candidate) => {
-        if (candidate) {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log('ICE adayı alındı:', candidate);
+        if (candidate && peerConnection) {
+            try {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                console.log('ICE adayı eklendi');
+            } catch (error) {
+                console.error('ICE adayı ekleme hatası:', error);
+            }
         }
     });
     
@@ -145,34 +171,52 @@ function initializeSocketConnection() {
     
     // Arama sonlandırma olayı
     socket.on('hang-up', () => {
+        console.log('Karşı taraf aramayı sonlandırdı');
         hangup();
     });
 }
 
 // WebRTC bağlantısını oluşturma
 function createPeerConnection() {
+    console.log('Peer bağlantısı oluşturuluyor...');
     peerConnection = new RTCPeerConnection(iceServers);
+    console.log('Peer bağlantısı oluşturuldu:', peerConnection);
     
     // Yerel medya akışını ekleme
-    localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-    });
+    if (localStream) {
+        console.log('Yerel akış ekleniyor:', localStream.getTracks().length + ' adet parça');
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
+    } else {
+        console.error('Yerel akış bulunamadı!');
+        return;
+    }
     
     // Uzak taraftan medya akışı alma
     peerConnection.ontrack = (event) => {
+        console.log('Uzak akış alındı:', event.streams);
         remoteStream = event.streams[0];
-        if (remoteVideo) remoteVideo.srcObject = remoteStream;
+        if (remoteVideo) {
+            remoteVideo.srcObject = remoteStream;
+            console.log('Uzak video kaynağı ayarlandı');
+        } else {
+            console.error('remoteVideo elementi bulunamadı!');
+        }
     };
     
     // ICE aday oluşturma olayı
     peerConnection.onicecandidate = (event) => {
+        console.log('ICE adayı oluşturuldu:', event.candidate);
         if (event.candidate) {
             socket.emit('ice-candidate', event.candidate, currentRoom);
+            console.log('ICE adayı gönderildi');
         }
     };
     
     // Bağlantı durumu değişim olayı
     peerConnection.onconnectionstatechange = () => {
+        console.log('Bağlantı durumu değişti:', peerConnection.connectionState);
         if (peerConnection.connectionState === 'connected') {
             console.log('Eşler bağlandı!');
             // Görüşme başlattığında kaydı başlat
@@ -180,35 +224,61 @@ function createPeerConnection() {
             startRecording();
         }
         if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+            console.log('Bağlantı koptu veya başarısız oldu');
             hangup();
         }
+    };
+    
+    // ICE bağlantı durumu değişim olayı
+    peerConnection.oniceconnectionstatechange = () => {
+        console.log('ICE bağlantı durumu:', peerConnection.iceConnectionState);
+    };
+    
+    // ICE toplama durumu değişim olayı
+    peerConnection.onicegatheringstatechange = () => {
+        console.log('ICE toplama durumu:', peerConnection.iceGatheringState);
     };
 }
 
 // Arama başlatma
 async function startCall(roomId = null) {
+    console.log('Arama başlatılıyor, Oda ID:', roomId);
     if (!roomId && socketConnected) {
         // Rastgele eşleşme iste
+        console.log('Rastgele eşleşme isteniyor...');
         socket.emit('request_match');
         return;
     }
     
     createPeerConnection();
     
-    // Teklif oluşturma
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-    
-    // Teklifi sunucuya gönderme
-    socket.emit('offer', offer, roomId);
-    
-    // Buton durumlarını güncelleme
-    if (callButton) callButton.disabled = true;
-    if (hangupButton) hangupButton.disabled = false;
+    try {
+        // Teklif oluşturma
+        console.log('Teklif oluşturuluyor...');
+        const offer = await peerConnection.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true
+        });
+        console.log('Teklif oluşturuldu:', offer);
+        
+        await peerConnection.setLocalDescription(offer);
+        console.log('Yerel açıklama ayarlandı');
+        
+        // Teklifi sunucuya gönderme
+        console.log('Teklif sunucuya gönderiliyor...');
+        socket.emit('offer', offer, roomId);
+        
+        // Buton durumlarını güncelleme
+        if (callButton) callButton.disabled = true;
+        if (hangupButton) hangupButton.disabled = false;
+    } catch (error) {
+        console.error('Arama başlatma hatası:', error);
+    }
 }
 
 // Aramayı sonlandırma
 function hangup() {
+    console.log('Arama sonlandırılıyor...');
     // Görüşme sonlandığında kaydı durdur
     if (isRecording) {
         stopRecording();
@@ -217,18 +287,21 @@ function hangup() {
     if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
+        console.log('Peer bağlantısı kapatıldı');
     }
     
     // Uzak video akışını durdurma
     if (remoteVideo && remoteVideo.srcObject) {
         remoteVideo.srcObject.getTracks().forEach(track => track.stop());
         remoteVideo.srcObject = null;
+        console.log('Uzak video akışı durduruldu');
     }
     
     // Sunucuya arama sonlandırma bildirimi gönderme
     if (socketConnected && currentRoom) {
         socket.emit('hang-up', currentRoom);
         currentRoom = null;
+        console.log('Sunucuya arama sonlandırma bildirimi gönderildi');
     }
     
     // Buton durumlarını güncelleme
@@ -238,12 +311,16 @@ function hangup() {
 
 // Sonraki eşleşmeyi bulma
 function findNextMatch() {
+    console.log('Sonraki eşleşme aranıyor...');
     // Mevcut görüşmeyi sonlandır
     hangup();
     
     // Yeni eşleşme iste
     if (socketConnected) {
         socket.emit('request_match');
+        console.log('Yeni eşleşme isteği gönderildi');
+    } else {
+        console.error('Soket bağlantısı yok, eşleşme istenemedi');
     }
 }
 
@@ -256,6 +333,7 @@ function sendMessage() {
     if (message && socketConnected && currentRoom) {
         // Sunucuya mesaj gönderme
         socket.emit('message', message, currentRoom);
+        console.log('Mesaj gönderildi:', message);
         
         // Kendi mesajımızı görüntüleme
         displayMessage(message, 'sent');
