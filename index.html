@@ -9,80 +9,65 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header class="navbar">
-        <div class="logo">
-            <h1>Monkey</h1>
+    <div class="app-container">
+        <!-- Sol Panel -->
+        <div class="left-panel">
+            <div class="logo">
+                <h1>Monkey</h1>
+            </div>
+            <div class="tagline">
+                <h2>Make new friends<br>face-to-face</h2>
+            </div>
+            <div class="monkey-images">
+                <img src="img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji1">
+                <img src="img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji2">
+                <img src="img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji3">
+                <img src="img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji4">
+                <img src="img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji5">
+            </div>
+            <div class="app-button">
+                <a href="#" id="downloadBtn">
+                    <img src="img/google-play.png" alt="Google Play">
+                    GET IT ON<br>
+                    <strong>Google Play</strong>
+                </a>
+            </div>
         </div>
-        <nav>
-            <ul>
-                <li><a href="#" class="active">Ana Sayfa</a></li>
-                <li><a href="#features">Özellikler</a></li>
-                <li><a href="#about">Hakkımızda</a></li>
-                <li><a href="#contact">İletişim</a></li>
-            </ul>
-        </nav>
-        <div class="auth-buttons">
-            <a href="/login.html" class="btn btn-login">Giriş Yap</a>
-            <a href="/register.html" class="btn btn-register">Kayıt Ol</a>
+        
+        <!-- Sağ Panel -->
+        <div class="right-panel">
+            <div class="top-bar">
+                <div class="toggle-container">
+                    <button class="toggle-button active" data-mode="solo">SOLO</button>
+                    <button class="toggle-button" data-mode="duo">DUO</button>
+                </div>
+                <div class="menu-button">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+            
+            <div class="online-count">
+                <span class="emoji">👥</span> <span id="onlineCount">0</span> users online
+            </div>
+            
+            <div class="filter-options">
+                <div class="filter-button active">
+                    <span class="emoji">👫</span> Both
+                </div>
+                <div class="filter-button">
+                    <span class="emoji">🌎</span> Global
+                </div>
+            </div>
+            
+            <div class="start-button-container">
+                <button id="startVideoChat" class="start-button">
+                    <i class="fas fa-video"></i> Start Video Chat
+                </button>
+            </div>
         </div>
-    </header>
-
-    <main>
-        <section class="hero">
-            <div class="hero-content">
-                <h1>Yeni İnsanlarla Tanışmanın En Kolay Yolu</h1>
-                <p>Dünya çapında milyonlarca kullanıcıyla anında görüntülü sohbete başlayın.</p>
-                <button id="startChatBtn" class="btn btn-primary">Sohbete Başla</button>
-            </div>
-            <div class="hero-image">
-                <img src="img/chat-illustration.svg" alt="Görüntülü sohbet">
-            </div>
-        </section>
-
-        <section id="features" class="features">
-            <h2>Neden Monkey?</h2>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <i class="fas fa-video"></i>
-                    <h3>HD Görüntülü Sohbet</h3>
-                    <p>Yüksek kaliteli görüntü ve ses ile kesintisiz sohbet deneyimi.</p>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-globe"></i>
-                    <h3>Dünya Çapında Bağlantı</h3>
-                    <p>Farklı kültürlerden insanlarla tanışın ve yeni arkadaşlıklar kurun.</p>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-lock"></i>
-                    <h3>Güvenli ve Özel</h3>
-                    <p>End-to-end şifreleme ile görüşmeleriniz daima güvende.</p>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-smile"></i>
-                    <h3>Eğlenceli Filtreler</h3>
-                    <p>Görüşmelerinizi eğlenceli filtreler ve efektlerle renklendirin.</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="premium-section">
-            <div class="premium-content">
-                <h2>Monkey Premium</h2>
-                <p>Daha fazla özellik ve sınırsız görüşme için premium üyeliğe geçin.</p>
-                <ul class="premium-features">
-                    <li><i class="fas fa-check"></i> Sınırsız görüntülü sohbet</li>
-                    <li><i class="fas fa-check"></i> Reklamsız deneyim</li>
-                    <li><i class="fas fa-check"></i> HD görüntü kalitesi</li>
-                    <li><i class="fas fa-check"></i> Özel profil rozetleri</li>
-                </ul>
-                <a href="/premium.html" class="btn btn-premium">Premium'a Yükselt</a>
-            </div>
-            <div class="premium-image">
-                <img src="img/premium-illustration.svg" alt="Premium özellikleri">
-            </div>
-        </section>
-    </main>
-
+    </div>
+    
+    <!-- Video Chat Modal -->
     <div id="chat-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -113,61 +98,128 @@
             </div>
         </div>
     </div>
-
-    <footer>
-        <div class="footer-content">
-            <div class="footer-logo">
-                <h3>Monkey</h3>
-                <p>© 2025 Tüm hakları saklıdır.</p>
-            </div>
-            <div class="footer-links">
-                <h4>Bağlantılar</h4>
-                <ul>
-                    <li><a href="#">Ana Sayfa</a></li>
-                    <li><a href="#features">Özellikler</a></li>
-                    <li><a href="#about">Hakkımızda</a></li>
-                    <li><a href="#contact">İletişim</a></li>
-                </ul>
-            </div>
-            <div class="footer-links">
-                <h4>Yasal</h4>
-                <ul>
-                    <li><a href="/terms.html">Kullanım Şartları</a></li>
-                    <li><a href="/privacy.html">Gizlilik Politikası</a></li>
-                    <li><a href="/cookies.html">Çerez Politikası</a></li>
-                </ul>
-            </div>
-            <div class="footer-social">
-                <h4>Bizi Takip Edin</h4>
-                <div class="social-icons">
-                    <a href="#"><i class="fab fa-facebook"></i></a>
-                    <a href="#"><i class="fab fa-twitter"></i></a>
-                    <a href="#"><i class="fab fa-instagram"></i></a>
-                    <a href="#"><i class="fab fa-youtube"></i></a>
+    
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content login-content">
+            <span class="close">&times;</span>
+            <h2>Giriş Yap</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">E-posta</label>
+                    <input type="email" id="email" required>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label for="password">Şifre</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Giriş Yap</button>
+            </form>
+            <p class="modal-footer">Hesabın yok mu? <a href="#" id="register-link">Kayıt Ol</a></p>
         </div>
-    </footer>
+    </div>
+    
+    <!-- Register Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content login-content">
+            <span class="close">&times;</span>
+            <h2>Kayıt Ol</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="username">Kullanıcı Adı</label>
+                    <input type="text" id="register-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">E-posta</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Şifre</label>
+                    <input type="password" id="register-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Kayıt Ol</button>
+            </form>
+            <p class="modal-footer">Zaten hesabın var mı? <a href="#" id="login-link">Giriş Yap</a></p>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/chat.js"></script>
     <script>
+        // Kullanıcı sayısını güncellemek için simüle edilen kod
+        document.getElementById('onlineCount').textContent = Math.floor(Math.random() * 50000) + 70000;
+        
         // Modal işlemleri
-        const modal = document.getElementById("chat-modal");
-        const startChatBtn = document.getElementById("startChatBtn");
-        const closeBtn = document.querySelector(".close");
-
+        const chatModal = document.getElementById("chat-modal");
+        const loginModal = document.getElementById("login-modal");
+        const registerModal = document.getElementById("register-modal");
+        const startChatBtn = document.getElementById("startVideoChat");
+        const closeBtns = document.querySelectorAll(".close");
+        const signInBtn = document.querySelector(".sign-in");
+        const registerLink = document.getElementById("register-link");
+        const loginLink = document.getElementById("login-link");
+        
+        // Video sohbet modali
         startChatBtn.onclick = function() {
-            modal.style.display = "block";
+            chatModal.style.display = "block";
+            document.getElementById("startButton").click(); // Otomatik olarak başlat
         }
-
-        closeBtn.onclick = function() {
-            modal.style.display = "none";
+        
+        // Kapatma butonları için olay dinleyicileri
+        closeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                chatModal.style.display = "none";
+                loginModal.style.display = "none";
+                registerModal.style.display = "none";
+            });
+        });
+        
+        // Register ve login linkleri arasında geçiş
+        if (registerLink) {
+            registerLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                loginModal.style.display = "none";
+                registerModal.style.display = "block";
+            });
         }
-
+        
+        if (loginLink) {
+            loginLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                registerModal.style.display = "none";
+                loginModal.style.display = "block";
+            });
+        }
+        
+        // Toggle butonları
+        const toggleButtons = document.querySelectorAll('.toggle-button');
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                toggleButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // Filtre butonları
+        const filterButtons = document.querySelectorAll('.filter-button');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // Sayfanın herhangi bir yerine tıklandığında modali kapatma
         window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = "none";
+            if (event.target == chatModal) {
+                chatModal.style.display = "none";
+            }
+            if (event.target == loginModal) {
+                loginModal.style.display = "none";
+            }
+            if (event.target == registerModal) {
+                registerModal.style.display = "none";
             }
         }
     </script>
