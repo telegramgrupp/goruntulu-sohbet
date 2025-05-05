@@ -700,112 +700,78 @@ app.use('/uploads', protect, express.static(path.join(__dirname, 'uploads')));
 const connectedUsers = [];
 
 // Socket.io olaylarını ayarlama
+
+const waitingQueue = [];
+const userStatus = {}; // socket.id -> 'available' | 'busy'
+
 io.on('connection', (socket) => {
     console.log('Yeni kullanıcı bağlandı:', socket.id);
-    connectedUsers.push(socket.id);
-    
-    // Kullanıcı kimliği ve oda ataması
+    userStatus[socket.id] = 'available';
+
     let userId = null;
     let room = null;
-    
-    // Kullanıcı kimlik doğrulama
+
     socket.on('authenticate', (token) => {
         try {
-            // Token'ı doğrula
             const decoded = jwt.verify(token, JWT_SECRET);
             userId = decoded.id;
-            socket.join(`user:${userId}`); // Kullanıcıya özel oda oluştur
-            
+            socket.join(`user:${userId}`);
             console.log(`Kullanıcı doğrulandı: ${userId}`);
         } catch (error) {
             console.error('Socket kimlik doğrulama hatası:', error);
         }
     });
-    
-    // Eşleşme istemi
-    socket.on('request_match', async (criteria = {}) => {
+
+    socket.on('request_match', async () => {
         try {
-            // Aktif kullanıcılardan rastgele birini seç
-            // Gerçek uygulamada burada eşleşme algoritması olacak
-            const otherSockets = connectedUsers.filter(id => id !== socket.id);
-            
-            if (otherSockets.length > 0) {
-                // Rastgele bir bağlantı seç
-                const randomIndex = Math.floor(Math.random() * otherSockets.length);
-                const matchedSocketId = otherSockets[randomIndex];
-                
-                // Benzersiz oda ID'si oluştur
-                room = `chat:${Date.now()}`;
-                
-                // Her iki kullanıcıyı da odaya ekle
-                socket.join(room);
-                io.sockets.sockets.get(matchedSocketId)?.join(room);
-                
-                // Eşleşmeyi her iki kullanıcıya da bildir
-                io.to(room).emit('match_found', { room });
-                
-                console.log(`Eşleşme oluşturuldu: ${room}`);
+            if (waitingQueue.length > 0) {
+                const matchedSocketId = waitingQueue.shift();
+
+                if (io.sockets.sockets.get(matchedSocketId)) {
+                    room = `chat:${Date.now()}`;
+
+                    socket.join(room);
+                    io.sockets.sockets.get(matchedSocketId).join(room);
+
+                    userStatus[socket.id] = 'busy';
+                    userStatus[matchedSocketId] = 'busy';
+
+                    io.to(room).emit('match_found', { room });
+                    console.log(`Eşleşme oluşturuldu: ${room}`);
+                } else {
+                    waitingQueue.push(socket.id);
+                    userStatus[socket.id] = 'available';
+                    socket.emit('waiting_for_match');
+                }
             } else {
-                // Eşleşme bulunamadı
-                socket.emit('no_match_found');
+                waitingQueue.push(socket.id);
+                userStatus[socket.id] = 'available';
+                socket.emit('waiting_for_match');
             }
         } catch (error) {
             console.error('Eşleşme hatası:', error);
             socket.emit('match_error', 'Eşleşme sırasında bir hata oluştu');
         }
     });
-    
-    // Arama teklifi alma olayı - odaya özel
+
     socket.on('offer', (offer, roomId) => {
-        console.log('Teklif alındı:', socket.id, 'Oda:', roomId);
         socket.to(roomId || room).emit('offer', offer);
     });
-    
-    // Arama cevabı alma olayı - odaya özel
+
     socket.on('answer', (answer, roomId) => {
-        console.log('Cevap alındı:', socket.id, 'Oda:', roomId);
         socket.to(roomId || room).emit('answer', answer);
     });
-    
-    // ICE aday alma olayı - odaya özel
-    socket.on('ice-candidate', (candidate, roomId) => {
-        socket.to(roomId || room).emit('ice-candidate', candidate);
+
+    socket.on('candidate', (candidate, roomId) => {
+        socket.to(roomId || room).emit('candidate', candidate);
     });
-    
-    // Mesaj alma olayı - odaya özel
-    socket.on('message', (message, roomId) => {
-        console.log('Mesaj alındı:', socket.id, message, 'Oda:', roomId);
-        socket.to(roomId || room).emit('message', message);
-    });
-    
-    // Arama sonlandırma olayı - odaya özel
-    socket.on('hang-up', (roomId) => {
-        console.log('Arama sonlandırıldı:', socket.id, 'Oda:', roomId);
-        socket.to(roomId || room).emit('hang-up');
-        
-        // Odadan çık
-        if (roomId || room) {
-            socket.leave(roomId || room);
-        }
-    });
-    
-    // Bağlantı kesilme olayı
+
     socket.on('disconnect', () => {
         console.log('Kullanıcı ayrıldı:', socket.id);
-        const index = connectedUsers.indexOf(socket.id);
-        if (index !== -1) {
-            connectedUsers.splice(index, 1);
+        if (waitingQueue.includes(socket.id)) {
+            const index = waitingQueue.indexOf(socket.id);
+            waitingQueue.splice(index, 1);
         }
-        
-        // Odadan çık
-        if (room) {
-            socket.to(room).emit('hang-up');
-        }
+        delete userStatus[socket.id];
     });
-});
-
-// Sunucuyu başlatma
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Sunucu çalışıyor: http://localhost:${PORT}`);
 });
