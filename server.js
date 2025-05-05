@@ -722,42 +722,13 @@ io.on('connection', (socket) => {
         }
     });
 
-    
-socket.on('request_match', async () => {
-    try {
-        if (waitingQueue.length > 0) {
-            const matchedSocketId = waitingQueue.shift();
-            console.log(`Eşleşme bulundu: ${socket.id} ↔ ${matchedSocketId}. Oda atanıyor.`);
+    socket.on('request_match', async () => {
+        try {
+            if (waitingQueue.length > 0) {
+                const matchedSocketId = waitingQueue.shift();
 
-            if (io.sockets.sockets.get(matchedSocketId)) {
-                room = `chat:${Date.now()}`;
-
-                socket.join(room);
-                io.sockets.sockets.get(matchedSocketId).join(room);
-
-                userStatus[socket.id] = 'busy';
-                userStatus[matchedSocketId] = 'busy';
-
-                io.to(room).emit('match_found', { room });
-                console.log(`Eşleşme odası ${room} aktif.`);
-            } else {
-                waitingQueue.push(socket.id);
-                userStatus[socket.id] = 'available';
-                console.log(`Eşleşme sırasında ${matchedSocketId} bulunamadı, ${socket.id} tekrar kuyruğa alındı.`);
-                socket.emit('waiting_for_match');
-            }
-        } else {
-            waitingQueue.push(socket.id);
-            userStatus[socket.id] = 'available';
-            console.log(`Bekleyen kimse yok, ${socket.id} kuyruğa eklendi. Şu an toplam bekleyen: ${waitingQueue.length}`);
-            socket.emit('waiting_for_match');
-        }
-    } catch (error) {
-        console.error('Eşleşme hatası:', error);
-        socket.emit('match_error', 'Eşleşme sırasında bir hata oluştu');
-    }
-});
-    `;
+                if (io.sockets.sockets.get(matchedSocketId)) {
+                    room = `chat:${Date.now()}`;
 
                     socket.join(room);
                     io.sockets.sockets.get(matchedSocketId).join(room);
