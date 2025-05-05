@@ -156,6 +156,7 @@ function createPeerConnection() {
 
 // Arama başlatma
 async function startCall() {
+    socket.emit('request_match');
     createPeerConnection();
     
     // Teklif oluşturma
