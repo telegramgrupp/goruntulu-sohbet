@@ -1,21 +1,18 @@
 {
-  "name": "goruntulu-sohbet",
+  "name": "video-chat",
   "version": "1.0.0",
-  "description": "Basit Görüntülü Sohbet Uygulaması",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "cookie-parser": "^1.4.7",
-    "express": "^4.17.1",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "mongoose": "^8.0.0",
+    "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^6.9.0",
+    "cookie-parser": "^1.4.6",
     "multer": "^1.4.5-lts.1",
-    "socket.io": "^4.4.1"
-  },
-  "engines": {
-    "node": "18.x"
+    "dotenv": "^16.3.1"
   }
 }
