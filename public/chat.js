@@ -80,13 +80,8 @@ async function startVideo() {
 function initializeSocketConnection() {
   console.log('Socket bağlantısı başlatılıyor');
   socket = io();
-  if (authService.isAuthenticated()) {
-    console.log('Kimlik doğrulama yapılıyor, token:', authService.token);
-    socket.emit('authenticate', authService.token);
-  } else {
-    showError('Giriş yapmalısınız.');
-    return;
-  }
+  // Geçici olarak kimlik doğrulama kontrolünü kaldırdık
+  console.log('Kimlik doğrulama atlandı, doğrudan bağlanılıyor');
 
   socket.on('connect', () => console.log('Sunucuya bağlandı'));
   socket.on('connect_error', (error) => showError('Sunucuya bağlanılamadı: ' + error.message));
@@ -219,7 +214,7 @@ function stopRecording() {
 
 async function uploadRecording(blob) {
   console.log('uploadRecording çağrıldı');
-  if (!authService.isAuthenticated()) return;
+  // Geçici olarak kimlik doğrulama kontrolünü kaldırdık
   const endTime = new Date();
   const formData = new FormData();
   formData.append('recording', blob, 'recording.webm');
@@ -229,7 +224,6 @@ async function uploadRecording(blob) {
 
   await fetch('/api/recordings/upload', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${authService.token}` },
     body: formData
   });
 }

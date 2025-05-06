@@ -423,7 +423,7 @@ app.post('/api/purchase/premium', protect, async (req, res) => {
   }
 });
 
-app.post('/api/recordings/upload', protect, upload.single('recording'), async (req, res) => {
+app.post('/api/recordings/upload', upload.single('recording'), async (req, res) => {
   try {
     const { duration, startTime, endTime } = req.body;
     const filePath = `/uploads/${req.file.filename}`;
@@ -432,7 +432,7 @@ app.post('/api/recordings/upload', protect, upload.single('recording'), async (r
       startTime: new Date(startTime),
       endTime: new Date(endTime),
       duration: parseInt(duration, 10),
-      participants: [req.user._id],
+      participants: [], // Geçici olarak kimlik doğrulama olmadan
       recordingUrl: filePath,
       messages: []
     });
@@ -503,7 +503,7 @@ app.post('/api/match', protect, async (req, res) => {
   }
 });
 
-app.use('/uploads', protect, express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const waitingQueue = [];
 const userStatus = {};

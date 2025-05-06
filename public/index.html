@@ -148,12 +148,8 @@
 
         startChatBtn.addEventListener('click', () => {
             console.log("Start Video Chat butonuna basıldı");
-            if (!localStorage.getItem('auth_token')) {
-                console.log("Giriş yapılmamış, login modal açılıyor");
-                loginModal.style.display = "block";
-                return;
-            }
-            console.log("Giriş yapılmış, chat modal açılıyor");
+            // Geçici olarak giriş kontrolünü kaldırdık
+            console.log("Chat modal açılıyor");
             chatModal.style.display = "block";
         });
 
@@ -198,7 +194,6 @@
             if (event.target == registerModal) registerModal.style.display = "none";
         };
 
-        // socket değişkenini kaldırdık, chat.js içinde tanımlı
         io().on('online_users', (count) => {
             console.log("Online kullanıcı sayısı güncellendi:", count);
             document.getElementById('onlineCount').textContent = count;
