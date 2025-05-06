@@ -33,7 +33,10 @@ function initializeEventListeners() {
     console.log('startButton dinleyicisi eklendi');
   } else console.log('startButton bulunamadı');
   if (callButton) {
-    callButton.addEventListener('click', startCall);
+    callButton.addEventListener('click', () => {
+      console.log('callButton tıklandı, eşleşme isteniyor');
+      startCall(); // roomId parametresi olmadan doğrudan eşleşme iste
+    });
     callButton.disabled = true;
     console.log('callButton dinleyicisi eklendi');
   } else console.log('callButton bulunamadı');
@@ -66,21 +69,33 @@ document.getElementById('chat-modal').addEventListener('click', () => {
 async function startVideo() {
   console.log('startVideo fonksiyonu çağrıldı');
   try {
+    // Kamera ve mikrofon cihazlarını kontrol et
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+    if (videoDevices.length === 0) {
+      showError('Cihazda kamera bulunamadı.');
+      return;
+    }
+
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     console.log('Kamera ve mikrofon erişimi sağlandı');
+    if (!localStream.getVideoTracks().length) {
+      showError('Kamera akışı alınamadı.');
+      return;
+    }
+
     localVideo.srcObject = localStream;
     startButton.disabled = true;
     callButton.disabled = false;
     initializeSocketConnection();
   } catch (error) {
-    showError('Kamera/mikrofon erişim hatası. İzinleri kontrol edin.');
+    showError('Kamera/mikrofon erişim hatası. İzinleri kontrol edin: ' + error.message);
   }
 }
 
 function initializeSocketConnection() {
   console.log('Socket bağlantısı başlatılıyor');
   socket = io();
-  // Geçici olarak kimlik doğrulama kontrolünü kaldırdık
   console.log('Kimlik doğrulama atlandı, doğrudan bağlanılıyor');
 
   socket.on('connect', () => console.log('Sunucuya bağlandı'));
@@ -148,7 +163,12 @@ function createPeerConnection() {
 async function startCall(roomId) {
   console.log('startCall çağrıldı, roomId:', roomId);
   if (!socket) return showError('Sunucuya bağlı değilsiniz.');
-  if (!roomId) return socket.emit('request_match');
+
+  if (!roomId) {
+    console.log('RoomId yok, eşleşme isteniyor');
+    socket.emit('request_match');
+    return;
+  }
 
   createPeerConnection();
   const offer = await peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
@@ -214,7 +234,6 @@ function stopRecording() {
 
 async function uploadRecording(blob) {
   console.log('uploadRecording çağrıldı');
-  // Geçici olarak kimlik doğrulama kontrolünü kaldırdık
   const endTime = new Date();
   const formData = new FormData();
   formData.append('recording', blob, 'recording.webm');

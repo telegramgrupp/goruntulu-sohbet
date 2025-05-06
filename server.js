@@ -432,7 +432,7 @@ app.post('/api/recordings/upload', upload.single('recording'), async (req, res) 
       startTime: new Date(startTime),
       endTime: new Date(endTime),
       duration: parseInt(duration, 10),
-      participants: [], // Geçici olarak kimlik doğrulama olmadan
+      participants: [],
       recordingUrl: filePath,
       messages: []
     });
@@ -506,14 +506,14 @@ app.post('/api/match', protect, async (req, res) => {
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const waitingQueue = [];
-const userStatus = {};
+const userStatus = new Map();
 
 io.on('connection', (socket) => {
   console.log('Yeni kullanıcı bağlandı:', socket.id);
-  userStatus[socket.id] = 'available';
+  userStatus.set(socket.id, 'available');
 
   const updateOnlineUsers = () => {
-    const activeUsers = Object.keys(io.sockets.sockets).length;
+    const activeUsers = io.sockets.sockets.size;
     console.log('Aktif kullanıcı sayısı güncellendi:', activeUsers);
     io.emit('online_users', activeUsers);
   };
@@ -537,30 +537,31 @@ io.on('connection', (socket) => {
   socket.on('request_match', async () => {
     console.log('Eşleşme isteği alındı:', socket.id, 'Kuyruk:', waitingQueue);
     try {
-      waitingQueue.filter((id) => io.sockets.sockets.get(id));
+      // Kuyruğu temizle, yalnızca aktif socket'leri tut
+      waitingQueue.filter((id) => io.sockets.sockets.has(id));
 
       if (waitingQueue.length > 0 && waitingQueue[0] !== socket.id) {
         const matchedSocketId = waitingQueue.shift();
 
-        if (io.sockets.sockets.get(matchedSocketId)) {
+        if (io.sockets.sockets.has(matchedSocketId)) {
           room = `chat:${Date.now()}`;
           socket.join(room);
           io.sockets.sockets.get(matchedSocketId).join(room);
 
-          userStatus[socket.id] = 'busy';
-          userStatus[matchedSocketId] = 'busy';
+          userStatus.set(socket.id, 'busy');
+          userStatus.set(matchedSocketId, 'busy');
 
           io.to(room).emit('match_found', { room });
           console.log(`Eşleşme oluşturuldu: ${room}, Katılımcılar: ${socket.id} ve ${matchedSocketId}`);
         } else {
           waitingQueue.push(socket.id);
-          userStatus[socket.id] = 'available';
+          userStatus.set(socket.id, 'available');
           socket.emit('waiting_for_match');
           console.log(`${socket.id} eşleşme bekliyor`);
         }
       } else {
         waitingQueue.push(socket.id);
-        userStatus[socket.id] = 'available';
+        userStatus.set(socket.id, 'available');
         socket.emit('waiting_for_match');
         console.log(`${socket.id} kuyruğa eklendi, eşleşme bekliyor`);
       }
@@ -601,7 +602,7 @@ io.on('connection', (socket) => {
     if (waitingQueue.includes(socket.id)) {
       waitingQueue.splice(waitingQueue.indexOf(socket.id), 1);
     }
-    delete userStatus[socket.id];
+    userStatus.delete(socket.id);
     updateOnlineUsers();
   });
 });
