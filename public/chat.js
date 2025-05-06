@@ -39,7 +39,7 @@ function initializeEventListeners() {
   if (callButton) {
     callButton.addEventListener('click', startCall);
     callButton.disabled = true;
-  }
+  } else console.log('callButton bulunamadı');
   if (hangupButton) {
     hangupButton.addEventListener('click', hangup);
     hangupButton.disabled = true;
@@ -49,13 +49,8 @@ function initializeEventListeners() {
   if (messageInput) messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 }
 
-document.getElementById('startVideoChat').addEventListener('click', () => {
-  if (!authService.isAuthenticated()) {
-    document.getElementById('login-modal').style.display = 'block';
-    return;
-  }
-  document.getElementById('chat-modal').style.display = 'block';
-  initializeEventListeners(); // Modal açıldığında olay dinleyicilerini ekle
+document.getElementById('chat-modal').addEventListener('click', () => {
+  initializeEventListeners();
 });
 
 async function startVideo() {

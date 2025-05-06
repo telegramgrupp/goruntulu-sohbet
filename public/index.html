@@ -145,55 +145,55 @@
         const chatModal = document.getElementById("chat-modal");
         const loginModal = document.getElementById("login-modal");
         const registerModal = document.getElementById("register-modal");
+        const startChatBtn = document.getElementById("startVideoChat");
         const closeBtns = document.querySelectorAll(".close");
         const registerLink = document.getElementById("register-link");
         const loginLink = document.getElementById("login-link");
 
-        closeBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                chatModal.style.display = "none";
-                loginModal.style.display = "none";
-                registerModal.style.display = "none";
-            });
+        startChatBtn.addEventListener('click', () => {
+            console.log("Start Video Chat butonuna basıldı");
+            if (!localStorage.getItem('auth_token')) {
+                loginModal.style.display = "block";
+                return;
+            }
+            chatModal.style.display = "block";
         });
 
-        if (registerLink) {
-            registerLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                loginModal.style.display = "none";
-                registerModal.style.display = "block";
-            });
-        }
+        closeBtns.forEach(btn => btn.addEventListener('click', () => {
+            chatModal.style.display = "none";
+            loginModal.style.display = "none";
+            registerModal.style.display = "none";
+        }));
 
-        if (loginLink) {
-            loginLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                registerModal.style.display = "none";
-                loginModal.style.display = "block";
-            });
-        }
+        if (registerLink) registerLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginModal.style.display = "none";
+            registerModal.style.display = "block";
+        });
+
+        if (loginLink) loginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            registerModal.style.display = "none";
+            loginModal.style.display = "block";
+        });
 
         const toggleButtons = document.querySelectorAll('.toggle-button');
-        toggleButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                toggleButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
+        toggleButtons.forEach(button => button.addEventListener('click', () => {
+            toggleButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+        }));
 
         const filterButtons = document.querySelectorAll('.filter-button');
-        filterButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
+        filterButtons.forEach(button => button.addEventListener('click', () => {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+        }));
 
-        window.onclick = function(event) {
+        window.onclick = (event) => {
             if (event.target == chatModal) chatModal.style.display = "none";
             if (event.target == loginModal) loginModal.style.display = "none";
             if (event.target == registerModal) registerModal.style.display = "none";
-        }
+        };
 
         const socket = io();
         socket.on('online_users', (count) => {
