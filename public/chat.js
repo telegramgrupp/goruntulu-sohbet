@@ -20,32 +20,46 @@ const iceServers = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
+    { urls: 'turn:turn-udp.telnyx.com:3478', username: 'telnyx', credential: 'telnyx123' },
+    { urls: 'turn:turn-tcp.telnyx.com:443', username: 'telnyx', credential: 'telnyx123' }
   ]
 };
 
 function showError(message) {
   alert(message);
+  console.log('Hata:', message);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const chatModal = document.getElementById('chat-modal');
-  chatModal.addEventListener('click', () => {
-    if (startButton) startButton.addEventListener('click', startVideo);
-    if (callButton) callButton.addEventListener('click', startCall);
-    if (hangupButton) hangupButton.addEventListener('click', hangup);
-    if (nextButton) nextButton.addEventListener('click', findNextMatch);
-    if (sendButton) sendButton.addEventListener('click', sendMessage);
-    if (messageInput) messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+function initializeEventListeners() {
+  console.log('Olay dinleyicileri ekleniyor...');
+  if (startButton) {
+    startButton.addEventListener('click', startVideo);
+    startButton.disabled = false;
+  } else console.log('startButton bulunamadı');
+  if (callButton) {
+    callButton.addEventListener('click', startCall);
+    callButton.disabled = true;
+  }
+  if (hangupButton) {
+    hangupButton.addEventListener('click', hangup);
+    hangupButton.disabled = true;
+  }
+  if (nextButton) nextButton.addEventListener('click', findNextMatch);
+  if (sendButton) sendButton.addEventListener('click', sendMessage);
+  if (messageInput) messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+}
 
-    if (startButton) startButton.disabled = false;
-    if (callButton) callButton.disabled = true;
-    if (hangupButton) hangupButton.disabled = true;
-  });
+document.getElementById('startVideoChat').addEventListener('click', () => {
+  if (!authService.isAuthenticated()) {
+    document.getElementById('login-modal').style.display = 'block';
+    return;
+  }
+  document.getElementById('chat-modal').style.display = 'block';
+  initializeEventListeners(); // Modal açıldığında olay dinleyicilerini ekle
 });
 
 async function startVideo() {
+  console.log('startVideo çağrıldı');
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     localVideo.srcObject = localStream;
@@ -163,7 +177,7 @@ function startRecording() {
   recordedChunks = [];
   mediaRecorder = new MediaRecorder(localStream, { mimeType: 'video/webm' });
   mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
-  mediaRecorder.onstop = () => uploadRecording(new Blob(recordChunks, { type: 'video/webm' }));
+  mediaRecorder.onstop = () => uploadRecording(new Blob(recordedChunks, { type: 'video/webm' }));
   mediaRecorder.start(1000);
   isRecording = true;
 }

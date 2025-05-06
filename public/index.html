@@ -10,7 +10,6 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Sol Panel -->
         <div class="left-panel">
             <div class="logo">
                 <h1>Monkey</h1>
@@ -34,7 +33,6 @@
             </div>
         </div>
         
-        <!-- Sağ Panel -->
         <div class="right-panel">
             <div class="top-bar">
                 <div class="toggle-container">
@@ -67,7 +65,6 @@
         </div>
     </div>
     
-    <!-- Video Chat Modal -->
     <div id="chat-modal" class="modal">
         <div class="modal-content">
             <span class="close">×</span>
@@ -99,7 +96,6 @@
         </div>
     </div>
     
-    <!-- Login Modal -->
     <div id="login-modal" class="modal">
         <div class="modal-content login-content">
             <span class="close">×</span>
@@ -119,7 +115,6 @@
         </div>
     </div>
     
-    <!-- Register Modal -->
     <div id="register-modal" class="modal">
         <div class="modal-content login-content">
             <span class="close">×</span>
@@ -147,26 +142,13 @@
     <script src="/js/auth.js"></script>
     <script src="/chat.js"></script>
     <script>
-        // Modal işlemleri
         const chatModal = document.getElementById("chat-modal");
         const loginModal = document.getElementById("login-modal");
         const registerModal = document.getElementById("register-modal");
-        const startChatBtn = document.getElementById("startVideoChat");
         const closeBtns = document.querySelectorAll(".close");
         const registerLink = document.getElementById("register-link");
         const loginLink = document.getElementById("login-link");
 
-        // Video sohbet modali
-        startChatBtn.onclick = function() {
-            if (!authService.isAuthenticated()) {
-                loginModal.style.display = "block";
-                return;
-            }
-            chatModal.style.display = "block";
-            document.getElementById("startButton").click(); // Otomatik olarak başlat
-        }
-        
-        // Kapatma butonları için olay dinleyicileri
         closeBtns.forEach(btn => {
             btn.addEventListener('click', function() {
                 chatModal.style.display = "none";
@@ -174,8 +156,7 @@
                 registerModal.style.display = "none";
             });
         });
-        
-        // Register ve login linkleri arasında geçiş
+
         if (registerLink) {
             registerLink.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -183,7 +164,7 @@
                 registerModal.style.display = "block";
             });
         }
-        
+
         if (loginLink) {
             loginLink.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -191,8 +172,7 @@
                 loginModal.style.display = "block";
             });
         }
-        
-        // Toggle butonları
+
         const toggleButtons = document.querySelectorAll('.toggle-button');
         toggleButtons.forEach(button => {
             button.addEventListener('click', function() {
@@ -200,8 +180,7 @@
                 this.classList.add('active');
             });
         });
-        
-        // Filtre butonları
+
         const filterButtons = document.querySelectorAll('.filter-button');
         filterButtons.forEach(button => {
             button.addEventListener('click', function() {
@@ -209,21 +188,13 @@
                 this.classList.add('active');
             });
         });
-        
-        // Sayfanın herhangi bir yerine tıklandığında modali kapatma
+
         window.onclick = function(event) {
-            if (event.target == chatModal) {
-                chatModal.style.display = "none";
-            }
-            if (event.target == loginModal) {
-                loginModal.style.display = "none";
-            }
-            if (event.target == registerModal) {
-                registerModal.style.display = "none";
-            }
+            if (event.target == chatModal) chatModal.style.display = "none";
+            if (event.target == loginModal) loginModal.style.display = "none";
+            if (event.target == registerModal) registerModal.style.display = "none";
         }
 
-        // Online kullanıcı sayısını güncelle
         const socket = io();
         socket.on('online_users', (count) => {
             document.getElementById('onlineCount').textContent = count;
