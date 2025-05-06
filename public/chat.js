@@ -11,11 +11,6 @@ const messagesContainer = document.getElementById('messages');
 let localStream, peerConnection, socket, currentRoom;
 let mediaRecorder, recordedChunks = [], isRecording = false, callStartTime;
 
-const authService = {
-  isAuthenticated: () => !!localStorage.getItem('auth_token'),
-  token: localStorage.getItem('auth_token')
-};
-
 const iceServers = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
