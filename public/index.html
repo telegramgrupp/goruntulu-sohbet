@@ -18,15 +18,10 @@
                 <h2>Make new friends<br>face-to-face</h2>
             </div>
             <div class="monkey-images">
-                <img src="/img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji1">
-                <img src="/img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji2">
-                <img src="/img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji3">
-                <img src="/img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji4">
-                <img src="/img/monkey-emoji.png" alt="Monkey emoji" class="floating-emoji emoji5">
+                <!-- Görseller kaldırıldı -->
             </div>
             <div class="app-button">
                 <a href="#" id="downloadBtn">
-                    <img src="/img/google-play.png" alt="Google Play">
                     GET IT ON<br>
                     <strong>Google Play</strong>
                 </a>
@@ -142,6 +137,7 @@
     <script src="/js/auth.js"></script>
     <script src="/chat.js"></script>
     <script>
+        console.log("index.html script bloğu yüklendi");
         const chatModal = document.getElementById("chat-modal");
         const loginModal = document.getElementById("login-modal");
         const registerModal = document.getElementById("register-modal");
@@ -153,13 +149,16 @@
         startChatBtn.addEventListener('click', () => {
             console.log("Start Video Chat butonuna basıldı");
             if (!localStorage.getItem('auth_token')) {
+                console.log("Giriş yapılmamış, login modal açılıyor");
                 loginModal.style.display = "block";
                 return;
             }
+            console.log("Giriş yapılmış, chat modal açılıyor");
             chatModal.style.display = "block";
         });
 
         closeBtns.forEach(btn => btn.addEventListener('click', () => {
+            console.log("Modal kapatılıyor");
             chatModal.style.display = "none";
             loginModal.style.display = "none";
             registerModal.style.display = "none";
@@ -167,24 +166,28 @@
 
         if (registerLink) registerLink.addEventListener('click', (e) => {
             e.preventDefault();
+            console.log("Register linkine tıklandı");
             loginModal.style.display = "none";
             registerModal.style.display = "block";
         });
 
         if (loginLink) loginLink.addEventListener('click', (e) => {
             e.preventDefault();
+            console.log("Login linkine tıklandı");
             registerModal.style.display = "none";
             loginModal.style.display = "block";
         });
 
         const toggleButtons = document.querySelectorAll('.toggle-button');
         toggleButtons.forEach(button => button.addEventListener('click', () => {
+            console.log("Toggle butonuna tıklandı:", button.dataset.mode);
             toggleButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
         }));
 
         const filterButtons = document.querySelectorAll('.filter-button');
         filterButtons.forEach(button => button.addEventListener('click', () => {
+            console.log("Filter butonuna tıklandı");
             filterButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
         }));
@@ -195,8 +198,9 @@
             if (event.target == registerModal) registerModal.style.display = "none";
         };
 
-        const socket = io();
-        socket.on('online_users', (count) => {
+        // socket değişkenini kaldırdık, chat.js içinde tanımlı
+        io().on('online_users', (count) => {
+            console.log("Online kullanıcı sayısı güncellendi:", count);
             document.getElementById('onlineCount').textContent = count;
         });
     </script>

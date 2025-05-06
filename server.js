@@ -12,26 +12,22 @@ const cookieParser = require('cookie-parser');
 const Recording = require('./models/recordingModel');
 const User = require('./models/userModel');
 
-// Express uygulaması oluşturma
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: [process.env.ALLOWED_ORIGIN], // Render.com URL'nizi buraya ekleyin
+    origin: [process.env.ALLOWED_ORIGIN],
     methods: ['GET', 'POST']
   }
 });
 
-// JWT ayarları
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRE = process.env.JWT_EXPIRE || '30d';
 
-// JWT token oluşturma fonksiyonu
 const generateToken = (id) => {
   return jwt.sign({ id }, JWT_SECRET, { expiresIn: JWT_EXPIRE });
 };
 
-// MongoDB bağlantısı
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -43,7 +39,6 @@ mongoose
     process.exit(1);
   });
 
-// Dosya yükleme için multer yapılandırması
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     const dir = path.join(__dirname, 'uploads');
@@ -61,7 +56,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB sınır
+  limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'video/webm') {
       cb(null, true);
@@ -71,13 +66,11 @@ const upload = multer({
   }
 });
 
-// Express middleware'leri
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Kimlik doğrulama middleware'i
 const protect = async (req, res, next) => {
   try {
     let token;
@@ -110,7 +103,6 @@ const protect = async (req, res, next) => {
   }
 };
 
-// Admin kontrolü middleware'i
 const adminCheck = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();
@@ -119,7 +111,6 @@ const adminCheck = (req, res, next) => {
   }
 };
 
-// Premium kontrolü middleware'i
 const premiumCheck = (req, res, next) => {
   if (
     req.user &&
@@ -133,7 +124,6 @@ const premiumCheck = (req, res, next) => {
   }
 };
 
-// Rotalar
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
@@ -162,7 +152,6 @@ app.get('/admin/recordings.html', protect, adminCheck, (req, res) => {
   res.sendFile(path.join(__dirname, 'public/views/admin/recordings.html'));
 });
 
-// API Endpoint'leri
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -516,13 +505,19 @@ app.post('/api/match', protect, async (req, res) => {
 
 app.use('/uploads', protect, express.static(path.join(__dirname, 'uploads')));
 
-// Socket.IO olayları
 const waitingQueue = [];
 const userStatus = {};
 
 io.on('connection', (socket) => {
   console.log('Yeni kullanıcı bağlandı:', socket.id);
   userStatus[socket.id] = 'available';
+
+  const updateOnlineUsers = () => {
+    const activeUsers = Object.keys(io.sockets.sockets).length;
+    console.log('Aktif kullanıcı sayısı güncellendi:', activeUsers);
+    io.emit('online_users', activeUsers);
+  };
+  updateOnlineUsers();
 
   let userId = null;
   let room = null;
@@ -532,7 +527,7 @@ io.on('connection', (socket) => {
       const decoded = jwt.verify(token, JWT_SECRET);
       userId = decoded.id;
       socket.join(`user:${userId}`);
-      console.log(`Kullanıcı doğrulandı: ${userId}`);
+      console.log(`Kullanıcı doğrulandı: ${userId}, socket.id: ${socket.id}`);
     } catch (error) {
       console.error('Socket kimlik doğrulama hatası:', error);
       socket.emit('auth_error', 'Kimlik doğrulama başarısız');
@@ -542,8 +537,7 @@ io.on('connection', (socket) => {
   socket.on('request_match', async () => {
     console.log('Eşleşme isteği alındı:', socket.id, 'Kuyruk:', waitingQueue);
     try {
-      // Kuyruktaki geçersiz soketleri temizle
-      waitingQueue = waitingQueue.filter((id) => io.sockets.sockets.get(id));
+      waitingQueue.filter((id) => io.sockets.sockets.get(id));
 
       if (waitingQueue.length > 0 && waitingQueue[0] !== socket.id) {
         const matchedSocketId = waitingQueue.shift();
@@ -557,16 +551,18 @@ io.on('connection', (socket) => {
           userStatus[matchedSocketId] = 'busy';
 
           io.to(room).emit('match_found', { room });
-          console.log(`Eşleşme oluşturuldu: ${room}`);
+          console.log(`Eşleşme oluşturuldu: ${room}, Katılımcılar: ${socket.id} ve ${matchedSocketId}`);
         } else {
           waitingQueue.push(socket.id);
           userStatus[socket.id] = 'available';
           socket.emit('waiting_for_match');
+          console.log(`${socket.id} eşleşme bekliyor`);
         }
       } else {
         waitingQueue.push(socket.id);
         userStatus[socket.id] = 'available';
         socket.emit('waiting_for_match');
+        console.log(`${socket.id} kuyruğa eklendi, eşleşme bekliyor`);
       }
     } catch (error) {
       console.error('Eşleşme hatası:', error);
@@ -575,25 +571,27 @@ io.on('connection', (socket) => {
   });
 
   socket.on('offer', (offer, roomId) => {
-    console.log('Teklif alındı:', socket.id, roomId);
+    console.log('Teklif alındı:', socket.id, 'Room:', roomId, 'Teklif:', offer);
     socket.to(roomId || room).emit('offer', offer);
   });
 
   socket.on('answer', (answer, roomId) => {
-    console.log('Cevap alındı:', socket.id, roomId);
+    console.log('Cevap alındı:', socket.id, 'Room:', roomId, 'Cevap:', answer);
     socket.to(roomId || room).emit('answer', answer);
   });
 
   socket.on('ice-candidate', (candidate, roomId) => {
-    console.log('ICE adayı alındı:', socket.id, candidate);
+    console.log('ICE adayı alındı:', socket.id, 'Room:', roomId, 'Aday:', candidate);
     socket.to(roomId || room).emit('ice-candidate', candidate);
   });
 
   socket.on('message', (message, roomId) => {
+    console.log('Mesaj alındı:', socket.id, 'Room:', roomId, 'Mesaj:', message);
     socket.to(roomId || room).emit('message', message);
   });
 
   socket.on('hang-up', (roomId) => {
+    console.log('Arama sonlandırıldı:', socket.id, 'Room:', roomId);
     socket.to(roomId || room).emit('hang-up');
   });
 
@@ -604,10 +602,10 @@ io.on('connection', (socket) => {
       waitingQueue.splice(waitingQueue.indexOf(socket.id), 1);
     }
     delete userStatus[socket.id];
+    updateOnlineUsers();
   });
 });
 
-// Genel hata middleware'i
 app.use((err, req, res, next) => {
   console.error('Hata:', err.stack);
   res.status(500).json({ success: false, message: 'Bir şeyler ters gitti' });
